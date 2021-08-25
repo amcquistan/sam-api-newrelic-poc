@@ -1,0 +1,162 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  quotes-api-new-relic
+
+  Sample SAM Template for quotes-api-new-relic
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.8
+
+Parameters:
+  CreatorTag:
+    Default: "Adam McQuistan"
+    Type: String
+  ProjectTag:
+    Default: "New Relic Serverless POC"
+    Type: String
+
+Resources:
+  GenerateQuoteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/generate_quote/
+      Handler: api.lambda_handler
+      Environment:
+        Variables:
+          QUOTES_TABLE: !Ref QuotesTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref QuotesTable
+      Tags:
+        Creator: !Ref CreatorTag
+        Project: !Ref ProjectTag
+      Events:
+        QuotesApi:
+          Type: Api
+          Properties:
+            Path: /quotes
+            Method: post
+
+  FavoriteQuoteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/favorite_quote/
+      Handler: api.lambda_handler
+      Environment:
+        Variables:
+          QUOTES_TABLE: !Ref QuotesTable
+          FAVORITE_QUOTES_TABLE: !Ref FavoriteQuotesTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FavoriteQuotesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref QuotesTable
+      Tags:
+        Creator: !Ref CreatorTag
+        Project: !Ref ProjectTag
+      Events:
+        QuotesApi:
+          Type: Api
+          Properties:
+            Path: /favorites
+            Method: post
+
+  FavoriteQuotesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/fetch_quotes/
+      Handler: api.lambda_handler
+      Environment:
+        Variables:
+          QUOTES_TABLE: !Ref QuotesTable
+          FAVORITE_QUOTES_TABLE: !Ref FavoriteQuotesTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FavoriteQuotesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref QuotesTable
+      Tags:
+        Creator: !Ref CreatorTag
+        Project: !Ref ProjectTag
+      Events:
+        QuotesApi:
+          Type: Api
+          Properties:
+            Path: /favorites
+            Method: get
+
+  QuotesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: quotes
+      AttributeDefinitions:
+        - AttributeName: "id" # id is SHA 256 Hash of author + text
+          AttributeType: "S"
+        - AttributeName: "author"
+          AttributeType: "S"
+        - AttributeName: "text"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: "quotesbyauthor"
+          KeySchema:
+            - AttributeName: "author"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: "quotesbytext"
+          KeySchema:
+            - AttributeName: "text"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      Tags:
+        - Key: Creator
+          Value: !Ref CreatorTag
+        - Key: Project
+          Value: !Ref ProjectTag
+
+  FavoriteQuotesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: favoritequotes
+      AttributeDefinitions:
+        - AttributeName: "username"
+          AttributeType: "S"
+        - AttributeName: "quoteid"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "username"
+          KeyType: "HASH"
+        - AttributeName: "quoteid"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      Tags:
+        - Key: Creator
+          Value: !Ref CreatorTag
+        - Key: Project
+          Value: !Ref ProjectTag
+
+Outputs:
+  QuotesGenerationApi:
+    Description: "API Gateway endpoint URL for Prod stage for Quotes generation API"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/quotes"
+  FavoriteQuotesApi:
+    Description: "API Gateway endpoint URL for Prod stage for Quotes generation API"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/favorites"
