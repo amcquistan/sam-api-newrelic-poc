@@ -7,11 +7,19 @@ from base64 import b64decode
 
 import boto3
 
+from newrelic import agent
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
+    # This is an example of a custom event. `FROM MyPythonEvent SELECT *` in New Relic will find this event.
+    agent.record_custom_event("MyPythonEvent", {
+        "zip": "zap"
+    })
+    # This attribute gets added to the normal AwsLambdaInvocation event
+    agent.add_custom_parameter('customAttribute', 'customAttributeValue')
     headers = {}
     if event['headers']:
         headers = {k.lower(): v for k, v in event['headers'].items()}

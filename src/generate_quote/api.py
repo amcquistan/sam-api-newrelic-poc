@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
 
+from newrelic import agent
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -37,6 +38,12 @@ class Quote:
 
 
 def lambda_handler(event, context):
+    # This is an example of a custom event. `FROM MyPythonEvent SELECT *` in New Relic will find this event.
+    agent.record_custom_event("MyPythonEvent", {
+        "zip": "zap"
+    })
+    # This attribute gets added to the normal AwsLambdaInvocation event
+    agent.add_custom_parameter('customAttribute', 'customAttributeValue')
     try:
         logging.info({'event': event})
         response = requests.get("https://quotes.toscrape.com/random")
