@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Description: "New Relic Account ID"
     AllowedPattern: '[0-9]+'
+  SecretsMgrArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: newrelic-secret-key-policy
+
 
 # New Relic setup taken from these web examples
 # - https://github.com/newrelic/newrelic-lambda-extension/blob/main/examples/sam/python/template.yaml
@@ -40,7 +44,7 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref QuotesTable
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !ImportValue NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN
+            SecretArn: !Ref SecretsMgrArn
       Layers:
         - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:451483290750:layer:NewRelicPython38:39
       Tags:
@@ -76,7 +80,7 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref QuotesTable
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !ImportValue NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN
+            SecretArn: !Ref SecretsMgrArn
       Layers:
         - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:451483290750:layer:NewRelicPython38:39
       Tags:
@@ -112,7 +116,7 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref QuotesTable
         - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !ImportValue NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN
+            SecretArn: !Ref SecretsMgrArn
       Layers:
         - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:451483290750:layer:NewRelicPython38:39
       Tags:

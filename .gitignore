@@ -243,4 +243,11 @@ $RECYCLE.BIN/
 
 .aws-sam
 
+samconfig.toml
+*.tfvars
+*.tfstate*
+
+.terraform*
+
 # End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
+
